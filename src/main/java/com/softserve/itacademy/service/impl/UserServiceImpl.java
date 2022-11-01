@@ -34,6 +34,15 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    public User readByEmail(String email) {
+        User user = userRepository.findByEmail(email);
+        if (user != null) {
+            return user;
+        }
+        throw new EntityNotFoundException(String.format("User with email %s not found", email));
+    }
+
+    @Override
     public User update(User role) {
         if (role != null) {
             readById(role.getId());
