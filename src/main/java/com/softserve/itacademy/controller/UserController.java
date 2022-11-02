@@ -9,6 +9,9 @@ import org.springframework.validation.BindingResult;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
+import java.security.Principal;
+import java.util.List;
+
 @Controller
 @RequestMapping("/users")
 public class UserController {
@@ -79,8 +82,13 @@ public class UserController {
     }
 
     @GetMapping("/all")
-    public String getAll(Model model) {
-        model.addAttribute("users", userService.getAll());
+    public String getAll(Model model, Principal principal) {
+        User user = userService.readByEmail(principal.getName());
+        if(user.getRole().getName().equals("ADMIN")) {
+            model.addAttribute("users", userService.getAll());
+        } else {
+            model.addAttribute("users", List.of(user));
+        }
         return "users-list";
     }
 }
