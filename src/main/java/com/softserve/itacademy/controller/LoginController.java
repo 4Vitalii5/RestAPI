@@ -23,17 +23,6 @@ public class LoginController {
         return "login";
     }
 
-    @GetMapping("/")
-    public String home(Principal principal) {
-        long id = 0;
-        for (User user : userService.getAll()) {
-            if (user.getEmail().equals(principal.getName())) {
-                id = user.getId();
-            }
-        }
-        return "redirect:/todos/all/users/" + id;
-    }
-
     @GetMapping("/accessDenied")
     public ModelAndView accessDenied(Principal user) {
         ModelAndView model = new ModelAndView();
