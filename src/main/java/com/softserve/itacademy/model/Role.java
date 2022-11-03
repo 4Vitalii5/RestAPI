@@ -1,8 +1,11 @@
 package com.softserve.itacademy.model;
 
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+
 import javax.persistence.*;
 import javax.validation.constraints.NotBlank;
 import java.util.List;
+import java.util.Set;
 
 @Entity
 @Table(name = "roles")
@@ -39,6 +42,13 @@ public class Role {
 
     public void setUsers(List<User> users) {
         this.users = users;
+    }
+
+    public Set<SimpleGrantedAuthority> getAuthorities() {
+        if (getName().equals("ADMIN")) {
+            return Set.of(new SimpleGrantedAuthority(getName()), new SimpleGrantedAuthority("USER"));
+        }
+        return Set.of(new SimpleGrantedAuthority("USER"));
     }
 
     @Override
