@@ -13,6 +13,7 @@ import org.springframework.validation.BindingResult;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
+import java.security.Principal;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -51,6 +52,9 @@ public class ToDoController {
     }
 
     @GetMapping("/{id}/tasks")
+    @PreAuthorize("hasAuthority('ADMIN') or " +
+            "@toDoController.isOwner(authentication.principal.id, #id) or " +
+            "@toDoController.isCollaborator(authentication.principal.id, #id)")
     public String read(@PathVariable long id, Model model) {
         ToDo todo = todoService.readById(id);
         List<Task> tasks = taskService.getByTodoId(id);
@@ -101,24 +105,40 @@ public class ToDoController {
     }
 
     @GetMapping("/{id}/add")
-    @PreAuthorize("hasAuthority('ADMIN') or authentication.principal.id == #userId")
-    public String addCollaborator(@PathVariable long id, @RequestParam("user_id") long userId) {
+    public String addCollaborator(@PathVariable long id, @RequestParam("user_id") long userId, Principal principal) {
         ToDo todo = todoService.readById(id);
-        List<User> collaborators = todo.getCollaborators();
-        collaborators.add(userService.readById(userId));
-        todo.setCollaborators(collaborators);
-        todoService.update(todo);
-        return "redirect:/todos/" + id + "/tasks";
+        User securityUser = userService.readByEmail(principal.getName());
+        if(securityUser.getRole().getName().equals("ADMIN") ||
+            securityUser.getId() == todo.getOwner().getId()) {
+            List<User> collaborators = todo.getCollaborators();
+            collaborators.add(userService.readById(userId));
+            todo.setCollaborators(collaborators);
+            todoService.update(todo);
+            return "redirect:/todos/" + id + "/tasks";
+        }
+        return "redirect:/accessDenied";
     }
 
     @GetMapping("/{id}/remove")
-    @PreAuthorize("hasAuthority('ADMIN') or authentication.principal.id == #userId")
-    public String removeCollaborator(@PathVariable long id, @RequestParam("user_id") long userId) {
+    public String removeCollaborator(@PathVariable long id, @RequestParam("user_id") long userId, Principal principal) {
         ToDo todo = todoService.readById(id);
-        List<User> collaborators = todo.getCollaborators();
-        collaborators.remove(userService.readById(userId));
-        todo.setCollaborators(collaborators);
-        todoService.update(todo);
-        return "redirect:/todos/" + id + "/tasks";
+        User securityUser = userService.readByEmail(principal.getName());
+        if (securityUser.getRole().getName().equals("ADMIN") ||
+                securityUser.getId() == todo.getOwner().getId()) {
+            List<User> collaborators = todo.getCollaborators();
+            collaborators.remove(userService.readById(userId));
+            todo.setCollaborators(collaborators);
+            todoService.update(todo);
+            return "redirect:/todos/" + id + "/tasks";
+        }
+        return "redirect:/accessDenied";
+    }
+
+    public boolean isOwner(long id, long toDoId) {
+        return todoService.readById(toDoId).getOwner().getId() == id;
+    }
+
+    public boolean isCollaborator(long id, long toDoId) {
+        return todoService.readById(toDoId).getCollaborators().contains(userService.readById(id));
     }
 }
