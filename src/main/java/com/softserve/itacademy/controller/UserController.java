@@ -3,6 +3,8 @@ package com.softserve.itacademy.controller;
 import com.softserve.itacademy.model.User;
 import com.softserve.itacademy.service.RoleService;
 import com.softserve.itacademy.service.UserService;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
@@ -42,6 +44,7 @@ public class UserController {
     }
 
     @GetMapping("/{id}/read")
+    @PreAuthorize("hasAuthority('ADMIN') or authentication.principal.id == #id")
     public String read(@PathVariable long id, Model model) {
         User user = userService.readById(id);
         model.addAttribute("user", user);
@@ -49,6 +52,7 @@ public class UserController {
     }
 
     @GetMapping("/{id}/update")
+    @PreAuthorize("hasAuthority('ADMIN') or authentication.principal.id == #id")
     public String update(@PathVariable long id, Model model) {
         User user = userService.readById(id);
         model.addAttribute("user", user);
@@ -65,19 +69,20 @@ public class UserController {
             model.addAttribute("roles", roleService.getAll());
             return "update-user";
         }
-        if (oldUser.getRole().getName().equals("USER")) {
-            user.setRole(oldUser.getRole());
-        } else {
-            user.setRole(roleService.readById(roleId));
-        }
+        user.setRole(roleService.readById(roleId));
         userService.update(user);
         return "redirect:/users/" + id + "/read";
     }
 
 
     @GetMapping("/{id}/delete")
-    public String delete(@PathVariable("id") long id) {
+    @PreAuthorize("hasAuthority('ADMIN') or authentication.principal.id == #id")
+    public String delete(@PathVariable("id") long id, Principal principal) {
+        User securedUser = userService.readByEmail(principal.getName());
         userService.delete(id);
+        if(securedUser.getId() == id) {
+            return "redirect:/logout";
+        }
         return "redirect:/users/all";
     }
 
