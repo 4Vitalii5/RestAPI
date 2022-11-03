@@ -4,6 +4,8 @@ import com.softserve.itacademy.exception.NullEntityReferenceException;
 import com.softserve.itacademy.model.User;
 import com.softserve.itacademy.repository.UserRepository;
 import com.softserve.itacademy.service.UserService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import javax.persistence.EntityNotFoundException;
@@ -15,13 +17,18 @@ public class UserServiceImpl implements UserService {
 
     private UserRepository userRepository;
 
+    @Autowired
+    private BCryptPasswordEncoder passwordEncoder;
+
     public UserServiceImpl(UserRepository userRepository) {
         this.userRepository = userRepository;
     }
 
+
     @Override
     public User create(User role) {
         if (role != null) {
+            role.setPassword(passwordEncoder.encode(role.getPassword()));
             return userRepository.save(role);
         }
         throw new NullEntityReferenceException("User cannot be 'null'");
@@ -46,6 +53,7 @@ public class UserServiceImpl implements UserService {
     public User update(User role) {
         if (role != null) {
             readById(role.getId());
+            role.setPassword(passwordEncoder.encode(role.getPassword()));
             return userRepository.save(role);
         }
         throw new NullEntityReferenceException("User cannot be 'null'");
