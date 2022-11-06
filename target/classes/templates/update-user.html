@@ -1,6 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" xmlns:th="http://www.thymeleaf.org"
-      xmlns:sec="http://www.thymeleaf.org/thymeleaf-extras-springsecurity5">
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
     <link href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css" rel="stylesheet">
@@ -55,7 +54,7 @@
                 <small class="form-text text-muted" th:if="${#fields.hasErrors('password')}" th:errors="*{password}"></small>
             </div>
         </div>
-        <div class="form-group" sec:authorize="hasAuthority('ADMIN')>
+        <div class="form-group">
             <label class="col-sm-2 control-label" for="role">Role:</label>
             <div class="col-sm-8">
                 <select class="form-control" id="role" name="roleId">
