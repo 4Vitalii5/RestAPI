@@ -38,16 +38,6 @@ public class UserController {
         this.roleService = roleService;
     }
 
-//    @GetMapping("/create")
-//    public OperationResponse create (
-//            @RequestParam(value = "login", required = true)
-//            String login,
-//            @RequestParam(value = "password", required = true)
-//            String password) {
-//        model.addAttribute("user", new User());
-//        return "create-user";
-//    }
-
     @PostMapping("/create")
     @ResponseStatus(HttpStatus.CREATED)
     public ResponseEntity<?> create(@RequestBody UserRequestDto userRequestDto) {
@@ -74,16 +64,6 @@ public class UserController {
         log.info("[GET] Request to read user");
         return new UserResponseDto(userService.readById(id));
     }
-
-//    @GetMapping("/{id}/update")
-//    @PreAuthorize("hasAuthority('ADMIN') or authentication.principal.id == #id")
-//    public String update(@PathVariable long id, Model model) {
-//        User user = userService.readById(id);
-//        model.addAttribute("user", user);
-//        model.addAttribute("roles", roleService.getAll());
-//        return "update-user";
-//    }
-
 
     @PostMapping("/{id}/update")
     @PreAuthorize("hasAuthority('ADMIN') or hasAuthority('USER') and authentication.principal.id == #id")
@@ -112,7 +92,6 @@ public class UserController {
                 .toUri();
         return ResponseEntity.created(location).body(new UserResponseDto(oldUser));
     }
-
 
     @GetMapping("/{id}/delete")
     @PreAuthorize("hasAuthority('ADMIN') or authentication.principal.id == #id")
