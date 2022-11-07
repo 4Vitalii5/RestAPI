@@ -1,5 +1,7 @@
 package com.softserve.itacademy.controller;
 
+import com.softserve.itacademy.dto.UserRequestDto;
+import com.softserve.itacademy.dto.UserResponseDto;
 import com.softserve.itacademy.model.User;
 import com.softserve.itacademy.service.RoleService;
 import com.softserve.itacademy.service.UserService;
@@ -8,6 +10,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -72,39 +75,51 @@ public class UserController {
         return new UserResponseDto(userService.readById(id));
     }
 
-    @GetMapping("/{id}/update")
-    @PreAuthorize("hasAuthority('ADMIN') or authentication.principal.id == #id")
-    public String update(@PathVariable long id, Model model) {
-        User user = userService.readById(id);
-        model.addAttribute("user", user);
-        model.addAttribute("roles", roleService.getAll());
-        return "update-user";
-    }
+//    @GetMapping("/{id}/update")
+//    @PreAuthorize("hasAuthority('ADMIN') or authentication.principal.id == #id")
+//    public String update(@PathVariable long id, Model model) {
+//        User user = userService.readById(id);
+//        model.addAttribute("user", user);
+//        model.addAttribute("roles", roleService.getAll());
+//        return "update-user";
+//    }
 
 
     @PostMapping("/{id}/update")
-    public String update(@PathVariable long id, Model model, @Validated @ModelAttribute("user") User user, @RequestParam("roleId") long roleId, BindingResult result) {
+    @PreAuthorize("hasAuthority('ADMIN') or hasAuthority('USER') and authentication.principal.id == #id")
+    @ResponseStatus(HttpStatus.OK)
+    public ResponseEntity<?> update(@PathVariable long id,
+                                    @RequestParam("roleId") long roleId,
+                                    @RequestBody UserRequestDto userRequestDto,
+                                    Authentication authentication) {
         User oldUser = userService.readById(id);
-        if (result.hasErrors()) {
-            user.setRole(oldUser.getRole());
-            model.addAttribute("roles", roleService.getAll());
-            return "update-user";
+        oldUser.setFirstName(userRequestDto.getFirstName());
+        oldUser.setLastName(userRequestDto.getLastName());
+        oldUser.setLastName(userRequestDto.getLastName());
+        oldUser.setEmail(userRequestDto.getEmail());
+        oldUser.setPassword(userRequestDto.getPassword());
+        if (oldUser.getRole().getName().equals("USER")){
+            oldUser.setRole(oldUser.getRole());
+        }else{
+            oldUser.setRole(roleService.readById(roleId));
         }
-        user.setRole(roleService.readById(roleId));
-        userService.update(user);
-        return "redirect:/users/" + id + "/read";
+        userService.update(oldUser);
+
+        URI location = ServletUriComponentsBuilder
+                .fromCurrentRequest()
+                .path("/{id")
+                .buildAndExpand(oldUser.getId())
+                .toUri();
+        return ResponseEntity.created(location).body(new UserResponseDto(oldUser));
     }
 
 
     @GetMapping("/{id}/delete")
     @PreAuthorize("hasAuthority('ADMIN') or authentication.principal.id == #id")
-    public String delete(@PathVariable("id") long id, Principal principal) {
-        User securedUser = userService.readByEmail(principal.getName());
+    public ResponseEntity delete(@PathVariable("id") long id, Authentication authentication) {
+        log.info("[GET] Request to delete user");
         userService.delete(id);
-        if(securedUser.getId() == id) {
-            return "redirect:/logout";
-        }
-        return "redirect:/users/all";
+        return new ResponseEntity<>(HttpStatus.NO_CONTENT);
     }
 
     @GetMapping
