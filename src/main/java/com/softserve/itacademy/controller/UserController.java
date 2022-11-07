@@ -59,14 +59,14 @@ public class UserController {
 
     @GetMapping("/{id}")
     @ResponseStatus(HttpStatus.OK)
-    @PreAuthorize("hasAuthority('ADMIN') or authentication.principal.id == #id")
+//    @PreAuthorize("hasAuthority('ADMIN') or authentication.principal.id == #id")
     public UserResponseDto read(@PathVariable long id) {
         log.info("[GET] Request to read user");
         return new UserResponseDto(userService.readById(id));
     }
 
     @PostMapping("/{id}/update")
-    @PreAuthorize("hasAuthority('ADMIN') or hasAuthority('USER') and authentication.principal.id == #id")
+//    @PreAuthorize("hasAuthority('ADMIN') or hasAuthority('USER') and authentication.principal.id == #id")
     @ResponseStatus(HttpStatus.OK)
     public ResponseEntity<?> update(@PathVariable long id,
                                     @RequestParam("roleId") long roleId,
@@ -94,7 +94,7 @@ public class UserController {
     }
 
     @GetMapping("/{id}/delete")
-    @PreAuthorize("hasAuthority('ADMIN') or authentication.principal.id == #id")
+//    @PreAuthorize("hasAuthority('ADMIN') or authentication.principal.id == #id")
     public ResponseEntity delete(@PathVariable("id") long id, Authentication authentication) {
         log.info("[GET] Request to delete user");
         userService.delete(id);
