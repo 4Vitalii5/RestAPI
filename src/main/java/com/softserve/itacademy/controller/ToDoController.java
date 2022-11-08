@@ -1,17 +1,21 @@
 package com.softserve.itacademy.controller;
 
+import com.softserve.itacademy.dto.TaskResponseDto;
 import com.softserve.itacademy.dto.ToDoRequestDto;
 import com.softserve.itacademy.dto.ToDoResponseDto;
 import com.softserve.itacademy.model.ToDo;
 import com.softserve.itacademy.model.User;
+import com.softserve.itacademy.service.TaskService;
 import com.softserve.itacademy.service.ToDoService;
 import com.softserve.itacademy.service.UserService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.parameters.P;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import java.net.URI;
+import java.security.Principal;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -22,10 +26,12 @@ public class ToDoController {
 
     private final ToDoService todoService;
     private final UserService userService;
+    private final TaskService taskService;
 
-    public ToDoController(ToDoService todoService, UserService userService) {
+    public ToDoController(ToDoService todoService, UserService userService, TaskService taskService) {
         this.todoService = todoService;
         this.userService = userService;
+        this.taskService = taskService;
     }
 
     @PostMapping("/create/users/{owner_id}")
@@ -94,34 +100,48 @@ public class ToDoController {
                 .map(ToDoResponseDto::new).collect(Collectors.toList());
     }
 
-    @GetMapping("/{id}/add")
-    public String addCollaborator(@PathVariable long id, @RequestParam("user_id") long userId/*, Principal principal*/) {
-        ToDo todo = todoService.readById(id);
-//        User securityUser = userService.readByEmail(principal.getName());
-//        if(securityUser.getRole().getName().equals("ADMIN") ||
-//            securityUser.getId() == todo.getOwner().getId()) {
-            List<User> collaborators = todo.getCollaborators();
-            collaborators.add(userService.readById(userId));
-            todo.setCollaborators(collaborators);
-            todoService.update(todo);
-            return "redirect:/todos/" + id + "/tasks";
-//        }
-//        return "redirect:/accessDenied";
+    @GetMapping("/{todo_id}/tasks")
+    @ResponseStatus(HttpStatus.OK)
+    public List<TaskResponseDto> readTasks(@PathVariable("todo_id") Long todoId) {
+        return taskService.getByTodoId(todoId)
+                .stream()
+                .map(TaskResponseDto::new)
+                .collect(Collectors.toList());
     }
 
-    @GetMapping("/{id}/remove")
-    public String removeCollaborator(@PathVariable long id, @RequestParam("user_id") long userId/*, Principal principal*/) {
-        ToDo todo = todoService.readById(id);
-//        User securityUser = userService.readByEmail(principal.getName());
-//        if (securityUser.getRole().getName().equals("ADMIN") ||
-//                securityUser.getId() == todo.getOwner().getId()) {
-            List<User> collaborators = todo.getCollaborators();
-            collaborators.remove(userService.readById(userId));
-            todo.setCollaborators(collaborators);
+    @GetMapping("/{todo_id}/users/{user_id}/add")
+    @ResponseStatus(HttpStatus.CREATED)
+    public ResponseEntity<?> addCollaborator(@PathVariable("todo_id") Long todoId,
+                                             @PathVariable("user_id") Long userId,
+                                             Principal principal) {
+        User user = userService.readById(userId);
+        ToDo todo = todoService.readById(todoId);
+        User securityUser = userService.readByEmail(principal.getName());
+        if(securityUser.getRole().getName().equals("ADMIN") ||
+                securityUser.getId() == todo.getOwner().getId()) {
+            if (todo.getCollaborators().contains(user)) {
+                return new ResponseEntity<>(HttpStatus.CONFLICT);
+            }
+            todo.getCollaborators().add(user);
             todoService.update(todo);
-            return "redirect:/todos/" + id + "/tasks";
-//        }
-//        return "redirect:/accessDenied";
+            return new ResponseEntity<>(HttpStatus.CREATED);
+        }
+        return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
+    }
+
+    @DeleteMapping("/{todo_id}/users/{user_id}/remove")
+    public ResponseEntity<?> removeCollaborator(@PathVariable("todo_id") Long todoId,
+                                     @PathVariable("user_id") Long userId,
+                                     Principal principal) {
+        ToDo todo = todoService.readById(todoId);
+        User securityUser = userService.readByEmail(principal.getName());
+        if (securityUser.getRole().getName().equals("ADMIN") ||
+                securityUser.getId() == todo.getOwner().getId()) {
+            todo.getCollaborators().remove(userService.readById(userId));
+            todoService.update(todo);
+            return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+        }
+        return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
     }
 
     public boolean isOwner(long id, long toDoId) {
