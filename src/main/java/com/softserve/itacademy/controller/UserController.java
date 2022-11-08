@@ -71,6 +71,7 @@ public class UserController {
     public ResponseEntity<?> update(@PathVariable long id,
                                     @RequestBody UserRequestDto userRequestDto,
                                     Authentication authentication) {
+        log.info("[Patch] Request to update user");
         User oldUser = userService.readById(id);
         oldUser.setFirstName(userRequestDto.getFirstName());
         oldUser.setLastName(userRequestDto.getLastName());
