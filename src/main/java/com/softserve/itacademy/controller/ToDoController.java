@@ -10,6 +10,7 @@ import com.softserve.itacademy.service.ToDoService;
 import com.softserve.itacademy.service.UserService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.parameters.P;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
@@ -36,7 +37,7 @@ public class ToDoController {
 
     @PostMapping("/create/users/{owner_id}")
     @ResponseStatus(HttpStatus.CREATED)
-//    @PreAuthorize("hasAuthority('ADMIN') or authentication.principal.id == #ownerId")
+    @PreAuthorize("hasAuthority('ADMIN') or authentication.principal.id == #ownerId")
     public ResponseEntity<?> create(@PathVariable("owner_id")Long ownerId,
                                     @RequestBody ToDoRequestDto toDoRequestDto) {
         ToDo toDo = new ToDo();
@@ -54,20 +55,19 @@ public class ToDoController {
 
     @GetMapping("/{id}")
     @ResponseStatus(HttpStatus.OK)
-//    @PreAuthorize("hasAuthority('ADMIN') or " +
-//            "@toDoController.isOwner(authentication.principal.id, #id) or " +
-//            "@toDoController.isCollaborator(authentication.principal.id, #id)")
+    @PreAuthorize("hasAuthority('ADMIN') or " +
+            "@toDoController.isOwner(authentication.principal.id, #id) or " +
+            "@toDoController.isCollaborator(authentication.principal.id, #id)")
     public ToDoResponseDto read(@PathVariable Long id) {
         return new ToDoResponseDto(todoService.readById(id));
     }
 
-    @PatchMapping("/{todo_id}/update/users/{owner_id}")
-//    @PreAuthorize("hasAuthority('ADMIN') or authentication.principal.id == #ownerId")
+    @PatchMapping("/{id}/update")
+    @PreAuthorize("hasAuthority('ADMIN') or @toDoController.isOwner(authentication.principal.id, #id)")
     @ResponseStatus(HttpStatus.OK)
-    public ResponseEntity<?> update(@PathVariable("todo_id") Long todoId,
-                                    @PathVariable("owner_id") Long ownerId,
+    public ResponseEntity<?> update(@PathVariable Long id,
                                     @RequestBody ToDoRequestDto toDoRequestDto) {
-        ToDo toDo = todoService.readById(todoId);
+        ToDo toDo = todoService.readById(id);
         toDo.setTitle(toDoRequestDto.getTitle());
         todoService.update(toDo);
         URI location = ServletUriComponentsBuilder
@@ -78,22 +78,18 @@ public class ToDoController {
         return ResponseEntity.created(location).body(new ToDoResponseDto(toDo));
     }
 
-
-//    @GetMapping("/{todo_id}/delete/users/{owner_id}")
-
-
-    @DeleteMapping("/{id}/delete/users/{owner_id}")
+    @DeleteMapping("/{id}/delete")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-//    @PreAuthorize("hasAuthority('ADMIN') or authentication.principal.id == #ownerId")
-    public ResponseEntity<?> delete(@PathVariable Long id,
-                                    @PathVariable("owner_id") Long ownerId) {
+    @PreAuthorize("hasAuthority('ADMIN') or " +
+            "@toDoController.isOwner(authentication.principal.id, #id)")
+    public ResponseEntity<?> delete(@PathVariable Long id) {
         todoService.delete(id);
         return new ResponseEntity<>(HttpStatus.NO_CONTENT);
     }
 
     @GetMapping
     @ResponseStatus(HttpStatus.OK)
-//    @PreAuthorize("hasAuthority('ADMIN')")
+    @PreAuthorize("hasAuthority('ADMIN')")
     public List<ToDoResponseDto> getAll() {
         return todoService.getAll()
                 .stream()
