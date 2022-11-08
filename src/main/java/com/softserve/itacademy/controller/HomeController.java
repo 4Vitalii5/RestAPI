@@ -1,16 +1,23 @@
 package com.softserve.itacademy.controller;
 
+import com.softserve.itacademy.dto.UserRequestDto;
+import com.softserve.itacademy.dto.UserResponseDto;
 import com.softserve.itacademy.model.User;
 import com.softserve.itacademy.service.RoleService;
 import com.softserve.itacademy.service.UserService;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
+import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.*;
 
 import java.security.Principal;
 import java.util.List;
+import java.util.stream.Collectors;
 
-@Controller
+@RestController
+@Slf4j
 public class HomeController {
     private final UserService userService;
     public HomeController(UserService userService) {
@@ -18,13 +25,16 @@ public class HomeController {
     }
 
     @GetMapping({"/", "home"})
-    public String home(Model model, Principal principal) {
-        User user = userService.readByEmail(principal.getName());
+    @ResponseStatus(HttpStatus.OK)
+    public List<UserResponseDto> home(@RequestBody UserRequestDto userRequestDto,
+                                Authentication authentication) {
+        User user = userService.readByEmail(userRequestDto.getEmail());
         if(user.getRole().getName().equals("ADMIN")) {
-            model.addAttribute("users", userService.getAll());
+            return userService.getAll().stream()
+                    .map(UserResponseDto::new)
+                    .collect(Collectors.toList());
         } else {
-            model.addAttribute("users", List.of(user));
+            return List.of(new UserResponseDto(userService.readByEmail(userRequestDto.getEmail())));
         }
-        return "home";
     }
 }
