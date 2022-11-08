@@ -28,6 +28,7 @@ public class HomeController {
     @ResponseStatus(HttpStatus.OK)
     public List<UserResponseDto> home(@RequestBody UserRequestDto userRequestDto,
                                 Authentication authentication) {
+        log.info("Home request");
         User user = userService.readByEmail(userRequestDto.getEmail());
         if(user.getRole().getName().equals("ADMIN")) {
             return userService.getAll().stream()
