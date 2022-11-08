@@ -38,7 +38,7 @@ public class UserController {
         this.roleService = roleService;
     }
 
-    @PostMapping
+    @PostMapping("/create")
     @ResponseStatus(HttpStatus.CREATED)
     public ResponseEntity<?> create(@RequestBody UserRequestDto userRequestDto) {
         log.info("[POST] Request to create user");
@@ -65,11 +65,11 @@ public class UserController {
         return new UserResponseDto(userService.readById(id));
     }
 
-    @PostMapping("/{id}/roles/{roleId}")
+    @PostMapping("/{id}/update")
 //    @PreAuthorize("hasAuthority('ADMIN') or hasAuthority('USER') and authentication.principal.id == #id")
     @ResponseStatus(HttpStatus.OK)
     public ResponseEntity<?> update(@PathVariable long id,
-                                    @PathVariable long roleId,
+                                    @RequestParam("roleId") long roleId,
                                     @RequestBody UserRequestDto userRequestDto,
                                     Authentication authentication) {
         User oldUser = userService.readById(id);
