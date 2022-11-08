@@ -21,6 +21,7 @@ import javax.persistence.EntityNotFoundException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.nio.file.AccessDeniedException;
 import java.time.LocalDateTime;
 
 @Slf4j
@@ -55,6 +56,17 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         );
 
         return new ResponseEntity<>(exception, HttpStatus.NOT_FOUND);
+    }
+
+    @ExceptionHandler(AccessDeniedException.class)
+    public ResponseEntity<ExceptionDto> accessDeniedErrorHandler(Exception e, WebRequest request) {
+        log.error("Handler 'accessDeniedErrorHandler' catch 'AccessDeniedException'");
+        ExceptionDto exceptionDto = new ExceptionDto(
+                LocalDateTime.now(),
+                e.getMessage(),
+                HttpStatus.UNAUTHORIZED.value()
+        );
+        return new ResponseEntity<>(exceptionDto, HttpStatus.UNAUTHORIZED);
     }
 
     @ExceptionHandler(Exception.class)
