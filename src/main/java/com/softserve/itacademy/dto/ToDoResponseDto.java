@@ -12,6 +12,7 @@ import java.util.stream.Collectors;
 
 @Value
 public class ToDoResponseDto {
+    Long id;
     String title;
     @JsonProperty("created_at")
     LocalDateTime createdAt;
@@ -21,6 +22,7 @@ public class ToDoResponseDto {
 
 
     public ToDoResponseDto(ToDo toDo) {
+        id = toDo.getId();
         title = toDo.getTitle();
         createdAt = toDo.getCreatedAt();
         ownerId = toDo.getOwner().getId();
